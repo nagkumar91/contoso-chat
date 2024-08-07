@@ -1,3 +1,4 @@
+#flake8: noqa
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -62,6 +63,37 @@ def get_response(customerId, question, chat_history):
     embedding = get_embedding(question)
     context = get_context(question, embedding)
     print("context:", context)
+    print("getting result...")
+
+    configuration = AzureOpenAIModelConfiguration(
+        #azure_deployment=os.environ["AZURE_DEPLOYMENT_NAME"],
+        azure_deployment="gpt-35-turbo",
+        api_version=os.environ["AZURE_OPENAI_API_VERSION"],
+        azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"]
+    )
+    override_model = {
+        "configuration": configuration,
+        "parameters": {"max_tokens": 512}
+    }
+    # get cwd
+    data_path = os.path.join(pathlib.Path(__file__).parent.resolve(), "./chat.prompty")
+    prompty_obj = Prompty.load(data_path, model=override_model)
+
+    result = prompty_obj(question = question, customer = customer, documentation = context)
+
+    print("result: ", result)
+
+    return {"answer": result, "context": context}
+
+
+def get_response_red_team_mode(customerId, question, chat_history, xpia_context):
+    print("inputs:", customerId, question)
+    customer = get_customer(customerId)
+    embedding = get_embedding(question)
+    context = get_context(question, embedding)
+    print("context:", context)
+    # as context is a str, we can append the xpia_context to it
+    context = context + xpia_context
     print("getting result...")
 
     configuration = AzureOpenAIModelConfiguration(
